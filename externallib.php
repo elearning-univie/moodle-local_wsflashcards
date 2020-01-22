@@ -75,7 +75,10 @@ class local_wsflashcards_external extends external_api {
      * @throws dml_exception
      */
     public static function get_courses() {
-        return 2;
+        global $DB, $USER;
+        $value = array(array('id' => $USER->id));
+
+        return $value;
     }
 
     /**
@@ -107,7 +110,10 @@ class local_wsflashcards_external extends external_api {
      * @return external_value
      */
     public static function get_courses_returns() {
-        return new external_value(PARAM_INT, 'new question');
+        return new external_multiple_structure(
+                new external_single_structure([
+                        'id' => new external_value(PARAM_INT, 'User id')
+                ]));
     }
 
     /**
