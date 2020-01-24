@@ -52,7 +52,12 @@ class local_wsflashcards_external extends external_api {
      */
     public static function get_questions_parameters() {
         return new external_function_parameters(
-                array()
+            array(
+                'q_amount' => new external_value(PARAM_INT,'Amount of questions'),
+                'a_unique_id'=> new external_multiple_structure(
+                    new external_value(PARAM_INT, 'Activity ID'), 'Array of Activity IDs which should be loaded.'
+                )
+            )
         );
     }
 
@@ -76,9 +81,40 @@ class local_wsflashcards_external extends external_api {
      */
     public static function get_courses() {
         global $DB, $USER;
-        $value = array(array('id' => $USER->id));
 
-        return $value;
+        $sql = "SELECT c.fullname AS cname, c.id AS cid, f.name AS aname, count(*) AS qcount, f.id AS aid " .
+                "FROM mdl_flashcards f " .
+                "INNER JOIN mdl_flashcards_q_stud_rel fs ON f.id = fs.flashcardsid " .
+                "INNER JOIN mdl_course c ON f.course = c.id " .
+                "WHERE fs.studentid = :userid " .
+                "GROUP BY c.fullname, c.id, f.id, f.name";
+
+        $records =  $DB->get_recordset_sql($sql, ['userid' => $USER->id]);
+        $courseid = 0;
+        $courses = array();
+        $activities = array();
+        $cname = "";
+        $cid = "";
+
+        foreach ($records as $record) {
+            if ($courseid != $record->cid) {
+                if ($courseid != 0) {
+                    $courses[] = array('c_name' => $cname, 'c_unique_id' => $cid, 'activity_col' => $activities);
+                    $activities = array();
+                }
+
+                $cname = $record->cname;
+                $cid = $record->cid;
+                $courseid = $record->cid;
+            }
+
+            $activity = array('a_name' => $record->aname, 'a_quest_count' => $record->qcount, 'a_unique_id' => $record->aid);
+            $activities[] = $activity;
+        }
+
+        $courses[] = array('c_name' => $cname, 'c_unique_id' => $cid, 'activity_col' => $activities);
+
+        return $courses;
     }
 
     /**
@@ -111,9 +147,18 @@ class local_wsflashcards_external extends external_api {
      */
     public static function get_courses_returns() {
         return new external_multiple_structure(
-                new external_single_structure([
-                        'id' => new external_value(PARAM_INT, 'User id')
-                ]));
+            new external_single_structure([
+                    'c_name' => new external_value(PARAM_TEXT, 'Course name'),
+                    'c_unique_id' => new external_value(PARAM_INT, 'Course ID'),
+                    'activity_col' => new external_multiple_structure(
+                    new external_single_structure([
+                        'a_name' => new external_value(PARAM_TEXT, 'Activity name'),
+                        'a_quest_count' => new external_value(PARAM_INT, 'Activity question count'),
+                        'a_unique_id' => new external_value(PARAM_INT, 'Activity ID')
+                    ])
+                )
+            ])
+        );
     }
 
     /**
