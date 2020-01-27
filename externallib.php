@@ -41,7 +41,7 @@ class local_wsflashcards_external extends external_api {
      */
     public static function get_courses_parameters() {
         return new external_function_parameters(
-            array()
+                array()
         );
     }
 
@@ -52,12 +52,12 @@ class local_wsflashcards_external extends external_api {
      */
     public static function get_questions_parameters() {
         return new external_function_parameters(
-            array(
-                'q_amount' => new external_value(PARAM_INT,'Amount of questions'),
-                'a_unique_id'=> new external_multiple_structure(
-                    new external_value(PARAM_INT, 'Activity ID'), 'Array of Activity IDs which should be loaded.'
+                array(
+                        'q_amount' => new external_value(PARAM_INT, 'Amount of questions'),
+                        'a_unique_id' => new external_multiple_structure(
+                                new external_value(PARAM_INT, 'Activity ID'), 'Array of Activity IDs which should be loaded.'
+                        )
                 )
-            )
         );
     }
 
@@ -68,25 +68,27 @@ class local_wsflashcards_external extends external_api {
      */
     public static function set_answers_parameters() {
         return new external_function_parameters(
-            array(
-                'activities' => new external_multiple_structure(
-                    new external_single_structure([
-                        'a_unique_id' => new external_value(PARAM_INT, 'Activity ID'),
-                        'questions' => new external_multiple_structure(
-                            new external_single_structure([
-                                'q_unique_id' => new external_value(PARAM_INT, 'Question ID'),
-                                'q_known' => new external_value(PARAM_INT, 'Boolean value for the answer. 1 if correct, 0 if wrong'),
-                                'q_answer_date' => new external_value(PARAM_TEXT, 'Answer date')
-                            ])
+                array(
+                        'activities' => new external_multiple_structure(
+                                new external_single_structure([
+                                        'a_unique_id' => new external_value(PARAM_INT, 'Activity ID'),
+                                        'questions' => new external_multiple_structure(
+                                                new external_single_structure([
+                                                        'q_unique_id' => new external_value(PARAM_INT, 'Question ID'),
+                                                        'q_known' => new external_value(PARAM_INT,
+                                                                'Boolean value for the answer. 1 if correct, 0 if wrong'),
+                                                        'q_answer_date' => new external_value(PARAM_TEXT, 'Answer date')
+                                                ])
+                                        )
+                                ])
                         )
-                    ])
                 )
-            )
         );
     }
 
     /**
      * Moves the question into the next box if the answer was correct, otherwise to box 1
+     *
      * @return int
      * @throws dml_exception
      */
@@ -100,7 +102,7 @@ class local_wsflashcards_external extends external_api {
                 WHERE fs.studentid = :userid
                 GROUP BY c.fullname, c.id, f.id, f.name";
 
-        $records =  $DB->get_recordset_sql($sql, ['userid' => $USER->id]);
+        $records = $DB->get_recordset_sql($sql, ['userid' => $USER->id]);
         $courseid = 0;
         $courses = array();
         $activities = array();
@@ -149,7 +151,7 @@ class local_wsflashcards_external extends external_api {
             $qcount = $qamount;
         }
 
-        foreach($aid as $activityid) {
+        foreach ($aid as $activityid) {
             if ($i >= $qcount) {
                 break;
             }
@@ -157,14 +159,17 @@ class local_wsflashcards_external extends external_api {
             $sql = "SELECT q.id AS qid, q.questiontext AS questiontext, qa.answer AS questionanswer FROM {flashcards_q_stud_rel} fsr
                     INNER JOIN {question} q ON fsr.questionid = q.id
                     INNER JOIN {question_answers} qa ON q.id = qa.question
-                    WHERE fsr.studentid = :userid 
+                    WHERE fsr.studentid = :userid
                     AND fsr.flashcardsid = :aid";
 
             $questions = array();
             $records = $DB->get_recordset_sql($sql, ['userid' => $USER->id, 'aid' => $activityid]);
 
-            foreach($records as $record) {
-                $questions[] = array('q_unique_id' => $record->qid, 'q_front_data' => $record->questiontext, 'q_back_data' => $record->questionanswer);
+            foreach ($records as $record) {
+                $questions[] = array(
+                        'q_unique_id' => $record->qid,
+                        'q_front_data' => $record->questiontext,
+                        'q_back_data' => $record->questionanswer);
                 $i++;
 
                 if ($i >= $qcount) {
@@ -189,13 +194,13 @@ class local_wsflashcards_external extends external_api {
     public static function set_answers($activities) {
         global $DB, $USER;
 
-        foreach($activities as $activity) {
+        foreach ($activities as $activity) {
             $correctids = array();
             $wrongids = array();
             $aid = $activity['a_unique_id'];
 
-            foreach($activity['questions'] as $question) {
-                if($question['q_known'] == 1) {
+            foreach ($activity['questions'] as $question) {
+                if ($question['q_known'] == 1) {
                     $correctids[] = $question['q_unique_id'];
                 } else {
                     $wrongids[] = $question['q_unique_id'];
@@ -210,7 +215,7 @@ class local_wsflashcards_external extends external_api {
                 $DB->execute($sql, ['userid' => $USER->id, 'aid' => $aid] + $cqids);
             }
 
-            if(!empty($wrongids)) {
+            if (!empty($wrongids)) {
                 list($inids, $wqids) = $DB->get_in_or_equal($wrongids);
                 $sql = "UPDATE {flashcards_q_stud_rel} 
                         SET tries = tries+1, currentbox = 1, wronganswercount = wronganswercount+ 
@@ -227,17 +232,17 @@ class local_wsflashcards_external extends external_api {
      */
     public static function get_courses_returns() {
         return new external_multiple_structure(
-            new external_single_structure([
-                    'c_name' => new external_value(PARAM_TEXT, 'Course name'),
-                    'c_unique_id' => new external_value(PARAM_INT, 'Course ID'),
-                    'activity_col' => new external_multiple_structure(
-                    new external_single_structure([
-                        'a_name' => new external_value(PARAM_TEXT, 'Activity name'),
-                        'a_quest_count' => new external_value(PARAM_INT, 'Activity question count'),
-                        'a_unique_id' => new external_value(PARAM_INT, 'Activity ID')
-                    ])
-                )
-            ])
+                new external_single_structure([
+                        'c_name' => new external_value(PARAM_TEXT, 'Course name'),
+                        'c_unique_id' => new external_value(PARAM_INT, 'Course ID'),
+                        'activity_col' => new external_multiple_structure(
+                                new external_single_structure([
+                                        'a_name' => new external_value(PARAM_TEXT, 'Activity name'),
+                                        'a_quest_count' => new external_value(PARAM_INT, 'Activity question count'),
+                                        'a_unique_id' => new external_value(PARAM_INT, 'Activity ID')
+                                ])
+                        )
+                ])
         );
     }
 
@@ -248,16 +253,16 @@ class local_wsflashcards_external extends external_api {
      */
     public static function get_questions_returns() {
         return new external_multiple_structure(
-            new external_single_structure([
-                'a_unique_id' => new external_value(PARAM_INT, 'Activity ID'),
-                'questions' => new external_multiple_structure(
-                    new external_single_structure([
-                        'q_unique_id' => new external_value(PARAM_INT, 'Question ID'),
-                        'q_front_data' => new external_value(PARAM_RAW, 'Question text'),
-                        'q_back_data' => new external_value(PARAM_RAW, 'Question answer')
-                    ])
-                )
-            ])
+                new external_single_structure([
+                        'a_unique_id' => new external_value(PARAM_INT, 'Activity ID'),
+                        'questions' => new external_multiple_structure(
+                                new external_single_structure([
+                                        'q_unique_id' => new external_value(PARAM_INT, 'Question ID'),
+                                        'q_front_data' => new external_value(PARAM_RAW, 'Question text'),
+                                        'q_back_data' => new external_value(PARAM_RAW, 'Question answer')
+                                ])
+                        )
+                ])
         );
     }
 
