@@ -24,6 +24,9 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+/**
+ * short name for the service.
+ */
 const LOCAL_WSFLASHCARDS_SERVICE_SHORTNAME = 'wsflashcards';
 
 $services = array(
