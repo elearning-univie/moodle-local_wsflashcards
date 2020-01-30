@@ -156,7 +156,7 @@ class local_wsflashcards_external extends external_api {
                 break;
             }
 
-            $sql = "SELECT q.id AS qid, q.questiontext AS questiontext, qa.answer AS questionanswer 
+            $sql = "SELECT q.id AS qid, q.questiontext AS questiontext, qa.answer AS questionanswer
                       FROM {flashcards_q_stud_rel} fsr
                       JOIN {question} q ON fsr.questionid = q.id
                       JOIN {question_answers} qa ON q.id = qa.question
@@ -211,7 +211,7 @@ class local_wsflashcards_external extends external_api {
             if (!empty($correctids)) {
                 list($inids, $cqids) = $DB->get_in_or_equal($correctids, SQL_PARAMS_NAMED);
                 $sql = "UPDATE {flashcards_q_stud_rel}
-                           SET tries = tries+1, 
+                           SET tries = tries+1,
                                currentbox = case when currentbox < 5 then currentbox+1 else 5 end
                          WHERE studentid = :userid AND flashcardsid = :aid AND questionid $inids";
                 $DB->execute($sql, ['userid' => $USER->id, 'aid' => $aid] + $cqids);
@@ -220,8 +220,8 @@ class local_wsflashcards_external extends external_api {
             if (!empty($wrongids)) {
                 list($inids, $wqids) = $DB->get_in_or_equal($wrongids);
                 $sql = "UPDATE {flashcards_q_stud_rel}
-                           SET tries = tries+1, 
-                               currentbox = 1, 
+                           SET tries = tries+1,
+                               currentbox = 1,
                                wronganswercount = wronganswercount+1
                          WHERE studentid = :userid AND flashcardsid = :aid AND questionid $inids";
                 $DB->execute($sql, ['userid' => $USER->id, 'aid' => $aid] + $wqids);
