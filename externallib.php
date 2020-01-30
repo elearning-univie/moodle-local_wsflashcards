@@ -96,11 +96,11 @@ class local_wsflashcards_external extends external_api {
         global $DB, $USER;
 
         $sql = "SELECT c.fullname AS cname, c.id AS cid, f.name AS aname, count(*) AS qcount, f.id AS aid
-                FROM {flashcards} f
-                INNER JOIN {flashcards_q_stud_rel} fs ON f.id = fs.flashcardsid
-                INNER JOIN {course} c ON f.course = c.id
-                WHERE fs.studentid = :userid
-                GROUP BY c.fullname, c.id, f.id, f.name";
+                  FROM {flashcards} f
+                  JOIN {flashcards_q_stud_rel} fs ON f.id = fs.flashcardsid
+                  JOIN {course} c ON f.course = c.id
+                 WHERE fs.studentid = :userid
+              GROUP BY c.fullname, c.id, f.id, f.name";
 
         $records = $DB->get_recordset_sql($sql, ['userid' => $USER->id]);
         $courseid = 0;
@@ -156,11 +156,12 @@ class local_wsflashcards_external extends external_api {
                 break;
             }
 
-            $sql = "SELECT q.id AS qid, q.questiontext AS questiontext, qa.answer AS questionanswer FROM {flashcards_q_stud_rel} fsr
-                    INNER JOIN {question} q ON fsr.questionid = q.id
-                    INNER JOIN {question_answers} qa ON q.id = qa.question
-                    WHERE fsr.studentid = :userid
-                    AND fsr.flashcardsid = :aid";
+            $sql = "SELECT q.id AS qid, q.questiontext AS questiontext, qa.answer AS questionanswer 
+                      FROM {flashcards_q_stud_rel} fsr
+                      JOIN {question} q ON fsr.questionid = q.id
+                      JOIN {question_answers} qa ON q.id = qa.question
+                     WHERE fsr.studentid = :userid
+                       AND fsr.flashcardsid = :aid";
 
             $questions = array();
             $records = $DB->get_recordset_sql($sql, ['userid' => $USER->id, 'aid' => $activityid]);
@@ -210,16 +211,19 @@ class local_wsflashcards_external extends external_api {
             if (!empty($correctids)) {
                 list($inids, $cqids) = $DB->get_in_or_equal($correctids, SQL_PARAMS_NAMED);
                 $sql = "UPDATE {flashcards_q_stud_rel}
-                        SET tries = tries+1, currentbox = case when currentbox < 5 then currentbox+1 else 5 end
-                        WHERE studentid = :userid AND flashcardsid = :aid AND questionid $inids";
+                           SET tries = tries+1, 
+                               currentbox = case when currentbox < 5 then currentbox+1 else 5 end
+                         WHERE studentid = :userid AND flashcardsid = :aid AND questionid $inids";
                 $DB->execute($sql, ['userid' => $USER->id, 'aid' => $aid] + $cqids);
             }
 
             if (!empty($wrongids)) {
                 list($inids, $wqids) = $DB->get_in_or_equal($wrongids);
                 $sql = "UPDATE {flashcards_q_stud_rel}
-                        SET tries = tries+1, currentbox = 1, wronganswercount = wronganswercount+
-                        WHERE studentid = :userid AND flashcardsid = :aid AND questionid $inids";
+                           SET tries = tries+1, 
+                               currentbox = 1, 
+                               wronganswercount = wronganswercount+1
+                         WHERE studentid = :userid AND flashcardsid = :aid AND questionid $inids";
                 $DB->execute($sql, ['userid' => $USER->id, 'aid' => $aid] + $wqids);
             }
         }
