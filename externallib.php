@@ -125,7 +125,9 @@ class local_wsflashcards_external extends external_api {
             $activities[] = $activity;
         }
 
-        $courses[] = array('c_name' => $cname, 'c_unique_id' => $cid, 'activity_col' => $activities);
+        if ($courseid != 0) {
+            $courses[] = array('c_name' => $cname, 'c_unique_id' => $cid, 'activity_col' => $activities);
+        }
 
         return $courses;
     }
@@ -290,7 +292,7 @@ class local_wsflashcards_external extends external_api {
         return new external_multiple_structure(
                 new external_single_structure([
                         'c_name' => new external_value(PARAM_TEXT, 'Course name'),
-                        'c_unique_id' => new external_value(PARAM_TEXT, 'Course ID'),
+                        'c_unique_id' => new external_value(PARAM_INT, 'Course ID'),
                         'activity_col' => new external_multiple_structure(
                                 new external_single_structure([
                                         'a_name' => new external_value(PARAM_TEXT, 'Activity name'),
