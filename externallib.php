@@ -53,7 +53,7 @@ class local_wsflashcards_external extends external_api {
     public static function get_questions_parameters() {
         return new external_function_parameters(
                 array(
-                        'q_amount' => new external_value(PARAM_INT, 'Amount of questions'),
+                        'q_amount' => new external_value(PARAM_INT, 'Amount of questions', VALUE_DEFAULT, 0),
                         'a_unique_id' => new external_multiple_structure(
                                 new external_value(PARAM_INT, 'Activity ID'), 'Array of Activity IDs which should be loaded.'
                         )
@@ -87,7 +87,7 @@ class local_wsflashcards_external extends external_api {
     }
 
     /**
-     * Moves the question into the next box if the answer was correct, otherwise to box 1
+     * Returns all courses for the current user, which have flashcards with active questions available.
      *
      * @return int
      * @throws dml_exception
@@ -125,13 +125,16 @@ class local_wsflashcards_external extends external_api {
             $activities[] = $activity;
         }
 
-        $courses[] = array('c_name' => $cname, 'c_unique_id' => $cid, 'activity_col' => $activities);
+        if ($courseid != 0) {
+            $courses[] = array('c_name' => $cname, 'c_unique_id' => $cid, 'activity_col' => $activities);
+        }
 
         return $courses;
     }
 
     /**
-     * Moves all questions from box 0 to box 1 for the activity
+     * Returns an equal amount of questions from each activity given in the $aid array. If one activity has not enough
+     * questions all other activities fill up the missing amount.
      *
      * @param int $qamount
      * @param array $aid
@@ -143,27 +146,71 @@ class local_wsflashcards_external extends external_api {
         global $DB, $USER;
 
         $returnvalues = array();
-        $i = 0;
+        $countaid = count($aid);
+        $values = array();
+        $countaidleft = $countaid;
 
-        if ($qamount > 100) {
-            $qcount = 100;
+        if ($qamount > 100 || $qamount <= 0) {
+            $qcount = 50;
         } else {
             $qcount = $qamount;
         }
 
-        foreach ($aid as $activityid) {
-            if ($i >= $qcount) {
-                break;
+        if ($countaid <= 100) {
+            if ($countaid > $qcount) {
+                $qcount = $countaid;
             }
+        } else {
+            throw new exception('Too many activities requested');
+        }
 
-            $sql = "SELECT q.id AS qid, q.questiontext AS questiontext, qa.answer AS questionanswer
+        $split = intdiv($qcount, $countaid);
+        $moddiff = $qcount % $countaid;
+
+        list($inids, $aids) = $DB->get_in_or_equal($aid, SQL_PARAMS_NAMED);
+
+        $sql = "SELECT fsr.flashcardsid AS fid, count(*) AS qcount
+                  FROM {flashcards_q_stud_rel} fsr
+                 WHERE fsr.studentid = :userid
+                   AND fsr.flashcardsid $inids
+              GROUP BY fsr.flashcardsid
+              ORDER BY qcount";
+
+        $records = $DB->get_recordset_sql($sql, ['userid' => $USER->id] + $aids);
+
+        foreach ($records as $record) {
+            if ($record->qcount <= $split) {
+                $values[$record->fid] = $record->qcount;
+                $moddiff += $split - $record->qcount;
+            } else {
+                $sharepool = intdiv($moddiff, $countaidleft);
+
+                if ($record->qcount <= ($split + $sharepool)) {
+                    $values[$record->fid] = $record->qcount;
+                } else {
+                    $values[$record->fid] = ($split + $sharepool);
+                    $moddiff -= $sharepool;
+                }
+            }
+            $countaidleft--;
+        }
+
+        foreach ($aid as $activityid) {
+            $questioncountleft = $values[$activityid];
+
+            $sql = "SELECT q.id AS qid, q.questiontext AS questiontext, qa.answer AS questionanswer, c.fullname AS cname, f.name AS aname
                       FROM {flashcards_q_stud_rel} fsr
                       JOIN {question} q ON fsr.questionid = q.id
                       JOIN {question_answers} qa ON q.id = qa.question
+                      JOIN {flashcards} f ON f.id = fsr.flashcardsid
+                      JOIN {course} c ON f.course = c.id
                      WHERE fsr.studentid = :userid
                        AND fsr.flashcardsid = :aid";
 
             $questions = array();
+            $cname = null;
+            $aname = null;
+
             $records = $DB->get_recordset_sql($sql, ['userid' => $USER->id, 'aid' => $activityid]);
 
             foreach ($records as $record) {
@@ -171,14 +218,21 @@ class local_wsflashcards_external extends external_api {
                         'q_unique_id' => $record->qid,
                         'q_front_data' => $record->questiontext,
                         'q_back_data' => $record->questionanswer);
-                $i++;
 
-                if ($i >= $qcount) {
+                if (is_null($cname)) {
+                    $cname = $record->cname;
+                    $aname = $record->aname;
+                }
+
+                $questioncountleft--;
+
+                if ($questioncountleft == 0) {
                     break;
                 }
             }
 
-            $returnvalues[] = array('a_unique_id' => $activityid, 'questions' => $questions);
+            $returnvalues[] =
+                    array('c_name' => $cname, 'a_name' => $aname, 'a_unique_id' => $activityid, 'questions' => $questions);
         }
 
         return $returnvalues;
@@ -238,7 +292,7 @@ class local_wsflashcards_external extends external_api {
         return new external_multiple_structure(
                 new external_single_structure([
                         'c_name' => new external_value(PARAM_TEXT, 'Course name'),
-                        'c_unique_id' => new external_value(PARAM_TEXT, 'Course ID'),
+                        'c_unique_id' => new external_value(PARAM_INT, 'Course ID'),
                         'activity_col' => new external_multiple_structure(
                                 new external_single_structure([
                                         'a_name' => new external_value(PARAM_TEXT, 'Activity name'),
@@ -258,7 +312,9 @@ class local_wsflashcards_external extends external_api {
     public static function get_questions_returns() {
         return new external_multiple_structure(
                 new external_single_structure([
+                        'c_name' => new external_value(PARAM_TEXT, 'Course name'),
                         'a_unique_id' => new external_value(PARAM_INT, 'Activity ID'),
+                        'a_name' => new external_value(PARAM_TEXT, 'Activity name'),
                         'questions' => new external_multiple_structure(
                                 new external_single_structure([
                                         'q_unique_id' => new external_value(PARAM_INT, 'Question ID'),
