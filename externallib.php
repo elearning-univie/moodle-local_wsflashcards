@@ -148,7 +148,7 @@ class local_wsflashcards_external extends external_api {
         $returnvalues = array();
         $countaid = count($aid);
         $values = array();
-        $j = $countaid;
+        $countaidleft = $countaid;
 
         if ($qamount > 100 || $qamount <= 0) {
             $qcount = 50;
@@ -165,7 +165,7 @@ class local_wsflashcards_external extends external_api {
         }
 
         $split = intdiv($qcount, $countaid);
-        $moddiv = $qcount % $countaid;
+        $moddiff = $qcount % $countaid;
 
         list($inids, $aids) = $DB->get_in_or_equal($aid, SQL_PARAMS_NAMED);
 
@@ -181,22 +181,22 @@ class local_wsflashcards_external extends external_api {
         foreach ($records as $record) {
             if ($record->qcount <= $split) {
                 $values[$record->fid] = $record->qcount;
-                $moddiv += $split - $record->qcount;
+                $moddiff += $split - $record->qcount;
             } else {
-                $sharepool = intdiv($moddiv, $j);
+                $sharepool = intdiv($moddiff, $countaidleft);
 
                 if ($record->qcount <= ($split + $sharepool)) {
                     $values[$record->fid] = $record->qcount;
                 } else {
                     $values[$record->fid] = ($split + $sharepool);
-                    $moddiv -= $sharepool;
+                    $moddiff -= $sharepool;
                 }
             }
-            $j--;
+            $countaidleft--;
         }
 
         foreach ($aid as $activityid) {
-            $i = $values[$activityid];
+            $questioncountleft = $values[$activityid];
 
             $sql = "SELECT q.id AS qid, q.questiontext AS questiontext, qa.answer AS questionanswer, c.fullname AS cname, f.name AS aname
                       FROM {flashcards_q_stud_rel} fsr
@@ -224,9 +224,9 @@ class local_wsflashcards_external extends external_api {
                     $aname = $record->aname;
                 }
 
-                $i--;
+                $questioncountleft--;
 
-                if ($i == 0) {
+                if ($questioncountleft == 0) {
                     break;
                 }
             }
