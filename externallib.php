@@ -283,7 +283,7 @@ class local_wsflashcards_external extends external_api {
             }
 
             if (!empty($wrongids)) {
-                list($inids, $wqids) = $DB->get_in_or_equal($wrongids);
+                list($inids, $wqids) = $DB->get_in_or_equal($wrongids, SQL_PARAMS_NAMED);
                 $sql = "UPDATE {flashcards_q_stud_rel}
                            SET tries = tries+1,
                                currentbox = 1,
