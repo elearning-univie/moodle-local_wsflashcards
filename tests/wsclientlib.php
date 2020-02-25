@@ -23,7 +23,11 @@
  */
 
 defined(MOODLE_INTERNAL) || die();
-
+/**
+ * calls webservice function
+ * @param string $url
+ * @return mixed
+ */
 function callws($url) {
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
@@ -37,7 +41,12 @@ function callws($url) {
     curl_close($ch);
     return $result;
 }
-
+/**
+ * puts an array to a string in URL workable way
+ * @param unknown $data
+ * @param unknown $momentstring
+ * @return string
+ */
 function array2string($data,$momentstring){
     $result = "";
     foreach ($data as $key => $value) {
