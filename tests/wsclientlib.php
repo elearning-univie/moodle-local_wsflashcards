@@ -37,7 +37,7 @@ function callws($url) {
     curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
     curl_setopt($ch, CURLOPT_TIMEOUT, 10);
     $result = curl_exec($ch);
-    
+
     curl_close($ch);
     return $result;
 }
@@ -47,11 +47,11 @@ function callws($url) {
  * @param unknown $momentstring
  * @return string
  */
-function array2string($data,$momentstring){
+function array2string($data, $momentstring) {
     $result = "";
     foreach ($data as $key => $value) {
         if (is_array($value)) {
-            if($momentstring) {
+            if ($momentstring) {
                 $newmoment = $momentstring . '[' . $key . ']';
                 $result .= array2string($value, $newmoment);
             } else {

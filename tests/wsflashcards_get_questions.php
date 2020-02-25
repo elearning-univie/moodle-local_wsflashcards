@@ -48,8 +48,8 @@ $token = json_decode($result, true)['token'];
 
 $url = $options['domainname'] . "webservice/rest/server.php?wstoken=$token&wsfunction=wsflashcards_get_questions&moodlewsrestformat=json&q_amount=" . $options['amount'];
 $activities = explode(',', $options['activities']);
-foreach ($activities as $key => $value ) {
+foreach ($activities as $key => $value) {
     $url .= "&a_unique_id[$key]=$value";
 }
-print_object(json_decode(callws($url),true));
+
 print("\n");

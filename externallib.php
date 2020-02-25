@@ -155,7 +155,7 @@ class local_wsflashcards_external extends external_api {
                   JOIN {modules} m ON cm.module = m.id AND m.name = 'flashcards'
                  WHERE cm.visible = 1
                    AND cm.instance $insql";
-        $aid = $DB->get_fieldset_sql($sql,$inids);
+        $aid = $DB->get_fieldset_sql($sql, $inids);
         $returnvalues = array();
         $countaid = count($aid);
         $values = array();

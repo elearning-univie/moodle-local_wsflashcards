@@ -40,8 +40,8 @@ list($options, $unrecognised) = cli_get_params([
     'h' => 'help'
 ]);
 
-$activity = [ 
-    'activities' =>[
+$activity = [
+    'activities' => [
         0 => [
             'a_unique_id' => $options['activity'],
             'questions' => [
@@ -62,8 +62,7 @@ $result = callws($tokenurl);
 $token = json_decode($result, true)['token'];
 
 $url = $options['domainname'] . "webservice/rest/server.php?wstoken=$token&wsfunction=wsflashcards_set_answers&moodlewsrestformat=json";
-$url .= array2string($activity,"");
+$url .= array2string($activity, "");
 
 print($url);
-print_object(json_decode(callws($url),true));
 print("\n");
