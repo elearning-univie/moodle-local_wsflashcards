@@ -21,13 +21,9 @@
  * @copyright  2020 University of Vienna
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
 defined('MOODLE_INTERNAL') || die();
-
-/**
- * short name for the service.
- */
-const LOCAL_WSFLASHCARDS_SERVICE_SHORTNAME = 'wsflashcards';
+global $CFG;
+require_once($CFG->dirroot . "/local/wsflashcards/constants.php");
 
 $services = array(
         'wsflashcards' => array(

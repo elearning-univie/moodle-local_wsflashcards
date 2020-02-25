@@ -23,7 +23,7 @@
  */
 
 defined('MOODLE_INTERNAL') || die();
-
+global $CFG;
 require_once("$CFG->libdir/externallib.php");
 
 /**
@@ -99,7 +99,11 @@ class local_wsflashcards_external extends external_api {
                   FROM {flashcards} f
                   JOIN {flashcards_q_stud_rel} fs ON f.id = fs.flashcardsid
                   JOIN {course} c ON f.course = c.id
+                  JOIN {course_modules} cm ON cm.instance = f.id
+                  JOIN {modules} m ON m.id = cm.module AND m.name = 'flashcards'
                  WHERE fs.studentid = :userid
+                   AND c.visible = 1
+                   AND cm.visible = 1
               GROUP BY c.fullname, c.id, f.id, f.name";
 
         $records = $DB->get_recordset_sql($sql, ['userid' => $USER->id]);
@@ -137,7 +141,7 @@ class local_wsflashcards_external extends external_api {
      * questions all other activities fill up the missing amount.
      *
      * @param int $qamount
-     * @param array $aid
+     * @param array $aid activityids
      * @return int
      * @throws coding_exception
      * @throws dml_exception
@@ -145,6 +149,13 @@ class local_wsflashcards_external extends external_api {
     public static function get_questions($qamount, $aid) {
         global $DB, $USER;
 
+        list($insql, $inids) = $DB->get_in_or_equal($aid);
+        $sql = "SELECT cm.instance
+                  FROM {course_modules} cm
+                  JOIN {modules} m ON cm.module = m.id AND m.name = 'flashcards'
+                 WHERE cm.visible = 1
+                   AND cm.instance $insql";
+        $aid = $DB->get_fieldset_sql($sql, $inids);
         $returnvalues = array();
         $countaid = count($aid);
         $values = array();
@@ -167,12 +178,12 @@ class local_wsflashcards_external extends external_api {
         $split = intdiv($qcount, $countaid);
         $moddiff = $qcount % $countaid;
 
-        list($inids, $aids) = $DB->get_in_or_equal($aid, SQL_PARAMS_NAMED);
+        list($insql, $aids) = $DB->get_in_or_equal($aid, SQL_PARAMS_NAMED);
 
         $sql = "SELECT fsr.flashcardsid AS fid, count(*) AS qcount
                   FROM {flashcards_q_stud_rel} fsr
                  WHERE fsr.studentid = :userid
-                   AND fsr.flashcardsid $inids
+                   AND fsr.flashcardsid $insql
               GROUP BY fsr.flashcardsid
               ORDER BY qcount";
 
@@ -272,7 +283,7 @@ class local_wsflashcards_external extends external_api {
             }
 
             if (!empty($wrongids)) {
-                list($inids, $wqids) = $DB->get_in_or_equal($wrongids);
+                list($inids, $wqids) = $DB->get_in_or_equal($wrongids, SQL_PARAMS_NAMED);
                 $sql = "UPDATE {flashcards_q_stud_rel}
                            SET tries = tries+1,
                                currentbox = 1,
