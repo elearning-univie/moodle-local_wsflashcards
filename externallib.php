@@ -25,6 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 global $CFG;
 require_once("$CFG->libdir/externallib.php");
+require_once($CFG->dirroot . '/local/wsflashcards/lib.php');
 
 /**
  * Class local_wsflashcards_external
@@ -116,7 +117,8 @@ class local_wsflashcards_external extends external_api {
         foreach ($records as $record) {
             if ($courseid != $record->cid) {
                 if ($courseid != 0) {
-                    $courses[] = array('c_name' => $cname, 'c_unique_id' => $cid, 'activity_col' => $activities);
+                    $courseimageb64 = encode_course_image($courseid);
+                    $courses[] = array('c_name' => $cname, 'c_unique_id' => $cid, 'c_image' => $courseimageb64, 'activity_col' => $activities);
                     $activities = array();
                 }
 
@@ -130,7 +132,8 @@ class local_wsflashcards_external extends external_api {
         }
 
         if ($courseid != 0) {
-            $courses[] = array('c_name' => $cname, 'c_unique_id' => $cid, 'activity_col' => $activities);
+            $courseimageb64 = encode_course_image($courseid);
+            $courses[] = array('c_name' => $cname, 'c_unique_id' => $cid, 'c_image' => $courseimageb64, 'activity_col' => $activities);
         }
 
         return $courses;
@@ -304,6 +307,7 @@ class local_wsflashcards_external extends external_api {
                 new external_single_structure([
                         'c_name' => new external_value(PARAM_TEXT, 'Course name'),
                         'c_unique_id' => new external_value(PARAM_INT, 'Course ID'),
+                        'c_image' => new external_value(PARAM_TEXT, 'Course image'),
                         'activity_col' => new external_multiple_structure(
                                 new external_single_structure([
                                         'a_name' => new external_value(PARAM_TEXT, 'Activity name'),
