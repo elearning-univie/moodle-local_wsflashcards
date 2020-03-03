@@ -150,7 +150,9 @@ class local_wsflashcards_external extends external_api {
      * @throws dml_exception
      */
     public static function get_questions($qamount, $aid) {
-        global $DB, $USER;
+        global $DB, $USER, $CFG;
+
+        require_once($CFG->libdir . '/questionlib.php');
 
         list($insql, $inids) = $DB->get_in_or_equal($aid);
         $sql = "SELECT cm.instance
@@ -226,8 +228,22 @@ class local_wsflashcards_external extends external_api {
             $aname = null;
 
             $records = $DB->get_recordset_sql($sql, ['userid' => $USER->id, 'aid' => $activityid]);
+            $cm = get_coursemodule_from_instance("flashcards", $activityid);
+            $context = context_module::instance($cm->id);
+
+            $quba = question_engine::make_questions_usage_by_activity('mod_flashcards', $context);
+            $quba->set_preferred_behaviour('immediatefeedback');
+            $options = new question_display_options();
+            $options->marks = question_display_options::MAX_ONLY;
+            $options->markdp = 2;
+            $options->feedback = question_display_options::HIDDEN;
+            $options->generalfeedback = question_display_options::HIDDEN;
 
             foreach ($records as $record) {
+
+                $question = question_bank::load_question($record->qid);
+                $quba->add_question($question, 1);
+
                 $questions[] = array(
                         'q_unique_id' => $record->qid,
                         'q_front_data' => $record->questiontext,
@@ -244,9 +260,34 @@ class local_wsflashcards_external extends external_api {
                     break;
                 }
             }
+            $quba->start_all_questions();
+            question_engine::save_questions_usage_by_activity($quba);
 
-            $returnvalues[] =
-                    array('c_name' => $cname, 'a_name' => $aname, 'a_unique_id' => $activityid, 'questions' => $questions);
+            //$questiontext = format_text($quba->render_question(5, $options), FORMAT_HTML);
+            $questiontext = $quba->render_question(5, $options);
+
+            preg_match_all('/<img[^>]+>/i', $questiontext, $images);
+
+            if (!empty($images)) {
+                foreach ($images[0] as $image) {
+                    preg_match('/src="(.*?)"/', $image, $imagesrc);
+                    if (strpos($imagesrc[1], 'questiontext') !== FALSE) {
+                        print_object($imagesrc[1]);
+                        //null;
+                    }
+
+                    /*if (!empty($imagealt[1])) {
+                        $questiontext = str_replace($image, $imagealt[1], $questiontext);
+                    } else {
+                        $questiontext = str_replace($image, get_string('noimagetext', 'mod_flashcards'), $questiontext);
+                    }*/
+                }
+            }
+
+            //print_object($questiontext);
+
+            /*$returnvalues[] =
+                    array('c_name' => $cname, 'a_name' => $aname, 'a_unique_id' => $activityid, 'questions' => $questions);*/
         }
 
         return $returnvalues;
