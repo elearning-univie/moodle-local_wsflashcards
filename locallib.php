@@ -69,7 +69,7 @@ function local_wsflashcards_encode_question_images($questiontext) {
 
                 if (!$file = $fs->get_file_by_hash(sha1($fullpath)) or $file->is_directory()) {
                     send_file_not_found();
-                } elseif ($file->is_valid_image()) {
+                } else if ($file->is_valid_image()) {
                     $encodedimage = '<img src="data:image/jpeg;charset=utf-8;base64,' .
                             base64_encode($file->get_content()) . '" />';
                     $questiontext = str_replace($image, $encodedimage, $questiontext);
