@@ -271,8 +271,6 @@ class local_wsflashcards_external extends external_api {
                     foreach ($images[0] as $image) {
                         preg_match('/pluginfile.php\/(.*?)"/', $image, $imagesrc);
 
-
-
                         if ($imagesrc[1] != '') {
                             $urlpath = explode('/', $imagesrc[1]);
                             $fs = get_file_storage();
@@ -303,7 +301,7 @@ class local_wsflashcards_external extends external_api {
                 $questionanswer = $dom->saveHTML($div->item(0));
 
                 $questions[] = array(
-                        'q_unique_id' => $qids[$i-1],
+                        'q_unique_id' => $qids[$i - 1],
                         'q_front_data' => $question,
                         'q_back_data' => $questionanswer);
             }

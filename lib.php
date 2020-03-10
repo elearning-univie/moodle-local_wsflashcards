@@ -26,6 +26,7 @@ defined('MOODLE_INTERNAL') || die();
 
 /**
  * encodes the first image of the course to base64 and returns the encoded image
+ *
  * @param int $courseid
  * @return string
  * @throws coding_exception
