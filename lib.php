@@ -46,3 +46,37 @@ function encode_course_image($courseid) {
     }
     return $courseimageb64;
 }
+
+/**
+ * encodes all images in a question to base64
+ *
+ * @param string $questiontext
+ * @return string|string[]
+ */
+function encode_question_images($questiontext) {
+    preg_match_all('/<img[^>]+>/i', $questiontext, $images);
+
+    if (!empty($images)) {
+        foreach ($images[0] as $image) {
+            preg_match('/pluginfile.php\/(.*?)"/', $image, $imagesrc);
+
+            if ($imagesrc[1] != '') {
+                $urlpath = explode('/', $imagesrc[1]);
+                $fs = get_file_storage();
+                $fullpath = "/$urlpath[0]/$urlpath[1]/$urlpath[2]/$urlpath[5]/$urlpath[6]";
+
+                if (!$file = $fs->get_file_by_hash(sha1($fullpath)) or $file->is_directory()) {
+                    send_file_not_found();
+                } else {
+                    if ($file->is_valid_image()) {
+                        $encodedimage = '<img src="data:image/jpeg;charset=utf-8;base64,' .
+                                base64_encode($file->get_content()) . '" />';
+                        $questiontext = str_replace($image, $encodedimage, $questiontext);
+                    }
+                }
+            }
+        }
+    }
+
+    return $questiontext;
+}

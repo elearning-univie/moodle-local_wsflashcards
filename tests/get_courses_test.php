@@ -22,7 +22,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-define('CLI_SCRIPT', true);
+defined('CLI_SCRIPT', true);
 require(__DIR__.'/../../../config.php');
 global $CFG;
 require_once($CFG->libdir.'/clilib.php');
