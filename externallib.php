@@ -214,10 +214,9 @@ class local_wsflashcards_external extends external_api {
         foreach ($aid as $activityid) {
             $questioncountleft = $values[$activityid];
 
-            $sql = "SELECT q.id AS qid, q.questiontext AS questiontext, qa.answer AS questionanswer, c.fullname AS cname, f.name AS aname
+            $sql = "SELECT q.id AS qid, c.fullname AS cname, f.name AS aname
                       FROM {flashcards_q_stud_rel} fsr
                       JOIN {question} q ON fsr.questionid = q.id
-                      JOIN {question_answers} qa ON q.id = qa.question
                       JOIN {flashcards} f ON f.id = fsr.flashcardsid
                       JOIN {course} c ON f.course = c.id
                      WHERE fsr.studentid = :userid
@@ -244,10 +243,7 @@ class local_wsflashcards_external extends external_api {
                 $question = question_bank::load_question($record->qid);
                 $quba->add_question($question, 1);
 
-                $questions[] = array(
-                        'q_unique_id' => $record->qid,
-                        'q_front_data' => $record->questiontext,
-                        'q_back_data' => $record->questionanswer);
+                $qids[] = $record->qid;
 
                 if (is_null($cname)) {
                     $cname = $record->cname;
@@ -260,34 +256,60 @@ class local_wsflashcards_external extends external_api {
                     break;
                 }
             }
+
             $quba->start_all_questions();
             question_engine::save_questions_usage_by_activity($quba);
 
-            //$questiontext = format_text($quba->render_question(5, $options), FORMAT_HTML);
-            $questiontext = $quba->render_question(5, $options);
+            $dom = new DOMDocument();
 
-            preg_match_all('/<img[^>]+>/i', $questiontext, $images);
+            for ($i = 1; $i <= $values[$activityid]; $i++) {
+                $questiontext = $quba->render_question($i, $options);
 
-            if (!empty($images)) {
-                foreach ($images[0] as $image) {
-                    preg_match('/src="(.*?)"/', $image, $imagesrc);
-                    if (strpos($imagesrc[1], 'questiontext') !== FALSE) {
-                        print_object($imagesrc[1]);
-                        //null;
+                preg_match_all('/<img[^>]+>/i', $questiontext, $images);
+
+                if (!empty($images)) {
+                    foreach ($images[0] as $image) {
+                        preg_match('/pluginfile.php\/(.*?)"/', $image, $imagesrc);
+
+
+
+                        if ($imagesrc[1] != '') {
+                            $urlpath = explode('/', $imagesrc[1]);
+                            $fs = get_file_storage();
+                            $fullpath = "/$urlpath[0]/$urlpath[1]/$urlpath[2]/$urlpath[5]/$urlpath[6]";
+
+                            if (!$file = $fs->get_file_by_hash(sha1($fullpath)) or $file->is_directory()) {
+                                send_file_not_found();
+                            } else {
+                                if ($file->is_valid_image()) {
+                                    $encodedimage = '<img src="data:image/jpeg;charset=utf-8;base64,' .
+                                            base64_encode($file->get_content()) . '" />';
+                                    $questiontext = str_replace($image, $encodedimage, $questiontext);
+                                }
+                            }
+                        }
                     }
-
-                    /*if (!empty($imagealt[1])) {
-                        $questiontext = str_replace($image, $imagealt[1], $questiontext);
-                    } else {
-                        $questiontext = str_replace($image, get_string('noimagetext', 'mod_flashcards'), $questiontext);
-                    }*/
                 }
+
+                $dom->loadHtml($questiontext);
+                $xpath = new DOMXpath($dom);
+
+                $query = './/div[contains(concat(" ", normalize-space(@class), " "), " qflashcard-question ")]/child::*';
+                $div = $xpath->evaluate($query);
+                $question = $dom->saveHTML($div->item(0));
+
+                $query = './/div[contains(concat(" ", normalize-space(@class), " "), " qflashcard-answer ")]/child::*';
+                $div = $xpath->evaluate($query);
+                $questionanswer = $dom->saveHTML($div->item(0));
+
+                $questions[] = array(
+                        'q_unique_id' => $qids[$i-1],
+                        'q_front_data' => $question,
+                        'q_back_data' => $questionanswer);
             }
 
-            //print_object($questiontext);
-
-            /*$returnvalues[] =
-                    array('c_name' => $cname, 'a_name' => $aname, 'a_unique_id' => $activityid, 'questions' => $questions);*/
+            $returnvalues[] =
+                    array('c_name' => $cname, 'a_name' => $aname, 'a_unique_id' => $activityid, 'questions' => $questions);
         }
 
         return $returnvalues;
