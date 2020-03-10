@@ -15,14 +15,16 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * wsflashcards get_courses function
+ * test for get_questions function
  *
  * @package    local_wsflashcards
  * @copyright  2020 University of Vienna
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+defined('MOODLE_INTERNAL') || die ();
 define('CLI_SCRIPT', true);
+
 require(__DIR__.'/../../../config.php');
 global $CFG;
 require_once($CFG->libdir.'/clilib.php');
@@ -33,25 +35,23 @@ list($options, $unrecognised) = cli_get_params([
     'domainname' => 'https://moodletest.univie.ac.at/',
     'username' => 'ottoh20',
     'password' => 'Ffe95qGUbel3xec7',
-    'activity' => 49,
-    'question' => 3238201,
-    'known' => 1,
+    'activities' => "49,52",
+    'amount' => '10',
 ], [
     'h' => 'help'
 ]);
 
-
-$domainname = optional_param('domainname', 'https://moodletest.univie.ac.at/', PARAM_URL);
-$username = optional_param('username', 'ottoh20', PARAM_USERNAME);
-$password = optional_param('password', 'Ffe95qGUbel3xec7', PARAM_TEXT);
-
-$tokenurl = $domainname . "login/token.php?username=$username&password=$password&service=wsflashcards";
+$tokenurl = $options['domainname'] . "login/token.php?username=" . $options['username'] . "&password=" . $options['password'] . "&service=wsflashcards";
 
 $result = callws($tokenurl);
 
 // grab URL and pass it to the browser
 $token = json_decode($result, true)['token'];
 
-$url = $domainname . "webservice/rest/server.php?wstoken=$token&wsfunction=wsflashcards_get_courses&moodlewsrestformat=json";
+$url = $options['domainname'] . "webservice/rest/server.php?wstoken=$token&wsfunction=wsflashcards_get_questions&moodlewsrestformat=json&q_amount=" . $options['amount'];
+$activities = explode(',', $options['activities']);
+foreach ($activities as $key => $value) {
+    $url .= "&a_unique_id[$key]=$value";
+}
 
-print(callws($url) . "\n");
+print("\n");

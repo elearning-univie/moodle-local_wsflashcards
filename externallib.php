@@ -25,6 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 global $CFG;
 require_once("$CFG->libdir/externallib.php");
+require_once($CFG->dirroot . '/local/wsflashcards/locallib.php');
 
 /**
  * Class local_wsflashcards_external
@@ -116,7 +117,8 @@ class local_wsflashcards_external extends external_api {
         foreach ($records as $record) {
             if ($courseid != $record->cid) {
                 if ($courseid != 0) {
-                    $courses[] = array('c_name' => $cname, 'c_unique_id' => $cid, 'activity_col' => $activities);
+                    $courseimageb64 = local_wsflashcards_encode_course_image($courseid);
+                    $courses[] = array('c_name' => $cname, 'c_unique_id' => $cid, 'c_image' => $courseimageb64, 'activity_col' => $activities);
                     $activities = array();
                 }
 
@@ -130,7 +132,8 @@ class local_wsflashcards_external extends external_api {
         }
 
         if ($courseid != 0) {
-            $courses[] = array('c_name' => $cname, 'c_unique_id' => $cid, 'activity_col' => $activities);
+            $courseimageb64 = local_wsflashcards_encode_course_image($courseid);
+            $courses[] = array('c_name' => $cname, 'c_unique_id' => $cid, 'c_image' => $courseimageb64, 'activity_col' => $activities);
         }
 
         return $courses;
@@ -147,7 +150,9 @@ class local_wsflashcards_external extends external_api {
      * @throws dml_exception
      */
     public static function get_questions($qamount, $aid) {
-        global $DB, $USER;
+        global $DB, $USER, $CFG;
+
+        require_once($CFG->libdir . '/questionlib.php');
 
         list($insql, $inids) = $DB->get_in_or_equal($aid);
         $sql = "SELECT cm.instance
@@ -209,10 +214,9 @@ class local_wsflashcards_external extends external_api {
         foreach ($aid as $activityid) {
             $questioncountleft = $values[$activityid];
 
-            $sql = "SELECT q.id AS qid, q.questiontext AS questiontext, qa.answer AS questionanswer, c.fullname AS cname, f.name AS aname
+            $sql = "SELECT q.id AS qid, c.fullname AS cname, f.name AS aname
                       FROM {flashcards_q_stud_rel} fsr
                       JOIN {question} q ON fsr.questionid = q.id
-                      JOIN {question_answers} qa ON q.id = qa.question
                       JOIN {flashcards} f ON f.id = fsr.flashcardsid
                       JOIN {course} c ON f.course = c.id
                      WHERE fsr.studentid = :userid
@@ -223,12 +227,23 @@ class local_wsflashcards_external extends external_api {
             $aname = null;
 
             $records = $DB->get_recordset_sql($sql, ['userid' => $USER->id, 'aid' => $activityid]);
+            $cm = get_coursemodule_from_instance("flashcards", $activityid);
+            $context = context_module::instance($cm->id);
+
+            $quba = question_engine::make_questions_usage_by_activity('mod_flashcards', $context);
+            $quba->set_preferred_behaviour('immediatefeedback');
+            $options = new question_display_options();
+            $options->marks = question_display_options::MAX_ONLY;
+            $options->markdp = 2;
+            $options->feedback = question_display_options::HIDDEN;
+            $options->generalfeedback = question_display_options::HIDDEN;
 
             foreach ($records as $record) {
-                $questions[] = array(
-                        'q_unique_id' => $record->qid,
-                        'q_front_data' => $record->questiontext,
-                        'q_back_data' => $record->questionanswer);
+
+                $question = question_bank::load_question($record->qid);
+                $quba->add_question($question, 1);
+
+                $qids[] = $record->qid;
 
                 if (is_null($cname)) {
                     $cname = $record->cname;
@@ -240,6 +255,32 @@ class local_wsflashcards_external extends external_api {
                 if ($questioncountleft == 0) {
                     break;
                 }
+            }
+
+            $quba->start_all_questions();
+            question_engine::save_questions_usage_by_activity($quba);
+
+            $dom = new DOMDocument();
+
+            for ($i = 1; $i <= $values[$activityid]; $i++) {
+                $questiontext = $quba->render_question($i, $options);
+                $questiontext = local_wsflashcards_encode_question_images($questiontext);
+
+                $dom->loadHtml($questiontext);
+                $xpath = new DOMXpath($dom);
+
+                $query = './/div[contains(concat(" ", normalize-space(@class), " "), " qflashcard-question ")]/child::*';
+                $div = $xpath->evaluate($query);
+                $question = $dom->saveHTML($div->item(0));
+
+                $query = './/div[contains(concat(" ", normalize-space(@class), " "), " qflashcard-answer ")]/child::*';
+                $div = $xpath->evaluate($query);
+                $questionanswer = $dom->saveHTML($div->item(0));
+
+                $questions[] = array(
+                        'q_unique_id' => $qids[$i - 1],
+                        'q_front_data' => $question,
+                        'q_back_data' => $questionanswer);
             }
 
             $returnvalues[] =
@@ -304,6 +345,7 @@ class local_wsflashcards_external extends external_api {
                 new external_single_structure([
                         'c_name' => new external_value(PARAM_TEXT, 'Course name'),
                         'c_unique_id' => new external_value(PARAM_INT, 'Course ID'),
+                        'c_image' => new external_value(PARAM_BASE64, 'Course image'),
                         'activity_col' => new external_multiple_structure(
                                 new external_single_structure([
                                         'a_name' => new external_value(PARAM_TEXT, 'Activity name'),
