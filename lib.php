@@ -44,5 +44,6 @@ function encode_course_image($courseid) {
             $courseimageb64 = base64_encode($f->get_content());
         }
     }
+
     return $courseimageb64;
 }
