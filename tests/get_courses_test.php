@@ -22,8 +22,9 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('CLI_SCRIPT') || die ();
 defined('MOODLE_INTERNAL') || die ();
+defined('CLI_SCRIPT') || die ();
+
 require(__DIR__.'/../../../config.php');
 global $CFG;
 require_once($CFG->libdir.'/clilib.php');
