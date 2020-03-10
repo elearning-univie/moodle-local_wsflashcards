@@ -24,6 +24,12 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+/**
+ * encodes the first image of the course to base64 and returns the encoded image
+ * @param int $courseid
+ * @return string
+ * @throws coding_exception
+ */
 function encode_course_image($courseid) {
     global $CFG;
     require_once($CFG->libdir . '/filelib.php');
