@@ -22,11 +22,12 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('CLI_SCRIPT', true);
+require('wsclientlib.php');
+defined('CLI_SCRIPT') || die ();
 require(__DIR__.'/../../../config.php');
 global $CFG;
 require_once($CFG->libdir.'/clilib.php');
-require('wsclientlib.php');
+
 
 list($options, $unrecognised) = cli_get_params([
     'help' => false,
