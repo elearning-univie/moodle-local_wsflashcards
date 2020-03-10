@@ -23,7 +23,7 @@
  */
 
 defined('MOODLE_INTERNAL') || die();
-define('CLI_SCRIPT', true);
+
 /**
  * calls webservice function
  * @param string $url

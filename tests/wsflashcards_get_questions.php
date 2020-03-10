@@ -23,7 +23,7 @@
  */
 
 defined('MOODLE_INTERNAL') || die ();
-defined('CLI_SCRIPT') || die ();
+define('CLI_SCRIPT', true);
 
 require(__DIR__.'/../../../config.php');
 global $CFG;
