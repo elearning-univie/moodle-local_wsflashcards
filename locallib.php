@@ -31,7 +31,7 @@ defined('MOODLE_INTERNAL') || die();
  * @return string
  * @throws coding_exception
  */
-function encode_course_image($courseid) {
+function local_wsflashcards_encode_course_image($courseid) {
     global $CFG;
     require_once($CFG->libdir . '/filelib.php');
 
@@ -53,7 +53,7 @@ function encode_course_image($courseid) {
  * @param string $questiontext
  * @return string|string[]
  */
-function encode_question_images($questiontext) {
+function local_wsflashcards_encode_question_images($questiontext) {
     preg_match_all('/<img[^>]+>/i', $questiontext, $images);
 
     if (!empty($images)) {

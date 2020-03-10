@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 global $CFG;
 require_once("$CFG->libdir/externallib.php");
-require_once($CFG->dirroot . '/local/wsflashcards/lib.php');
+require_once($CFG->dirroot . '/local/wsflashcards/locallib.php');
 
 /**
  * Class local_wsflashcards_external
@@ -117,7 +117,7 @@ class local_wsflashcards_external extends external_api {
         foreach ($records as $record) {
             if ($courseid != $record->cid) {
                 if ($courseid != 0) {
-                    $courseimageb64 = encode_course_image($courseid);
+                    $courseimageb64 = local_wsflashcards_encode_course_image($courseid);
                     $courses[] = array('c_name' => $cname, 'c_unique_id' => $cid, 'c_image' => $courseimageb64, 'activity_col' => $activities);
                     $activities = array();
                 }
@@ -132,7 +132,7 @@ class local_wsflashcards_external extends external_api {
         }
 
         if ($courseid != 0) {
-            $courseimageb64 = encode_course_image($courseid);
+            $courseimageb64 = local_wsflashcards_encode_course_image($courseid);
             $courses[] = array('c_name' => $cname, 'c_unique_id' => $cid, 'c_image' => $courseimageb64, 'activity_col' => $activities);
         }
 
@@ -264,7 +264,7 @@ class local_wsflashcards_external extends external_api {
 
             for ($i = 1; $i <= $values[$activityid]; $i++) {
                 $questiontext = $quba->render_question($i, $options);
-                $questiontext = encode_question_images($questiontext);
+                $questiontext = local_wsflashcards_encode_question_images($questiontext);
 
                 $dom->loadHtml($questiontext);
                 $xpath = new DOMXpath($dom);
