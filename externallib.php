@@ -151,25 +151,26 @@ class local_wsflashcards_external extends external_api {
      */
     public static function get_questions($qamount, $aid) {
         global $DB, $USER, $CFG;
-
         require_once($CFG->libdir . '/questionlib.php');
+        $params = self::validate_parameters(self::get_questions_parameters(), array('q_amount' => $qamount, 'a_unique_id' => $aid));
 
-        list($insql, $inids) = $DB->get_in_or_equal($aid);
+        list($insql, $inids) = $DB->get_in_or_equal($params['a_unique_id']);
         $sql = "SELECT cm.instance
                   FROM {course_modules} cm
                   JOIN {modules} m ON cm.module = m.id AND m.name = 'flashcards'
                  WHERE cm.visible = 1
                    AND cm.instance $insql";
         $aid = $DB->get_fieldset_sql($sql, $inids);
+
         $returnvalues = array();
         $countaid = count($aid);
         $values = array();
         $countaidleft = $countaid;
 
-        if ($qamount > 100 || $qamount <= 0) {
+        if ($params['q_amount'] > 100 || $params['q_amount'] <= 0) {
             $qcount = 50;
         } else {
-            $qcount = $qamount;
+            $qcount = $params['q_amount'];
         }
 
         if ($countaid <= 100) {
@@ -228,7 +229,16 @@ class local_wsflashcards_external extends external_api {
 
             $records = $DB->get_recordset_sql($sql, ['userid' => $USER->id, 'aid' => $activityid]);
             $cm = get_coursemodule_from_instance("flashcards", $activityid);
-            $context = context_module::instance($cm->id);
+            $context = context_module::instance($cm->id, MUST_EXIST);
+
+            try {
+                self::validate_context($context);
+                require_capability('moodle/course:update', $context);
+            } catch (Exception $e) {
+                $exceptionparam = new stdClass();
+                $exceptionparam->message = $e->getMessage();
+                throw new moodle_exception('errorcoursecontextnotvalid', 'webservice', '', $exceptionparam);
+            }
 
             $quba = question_engine::make_questions_usage_by_activity('mod_flashcards', $context);
             $quba->set_preferred_behaviour('immediatefeedback');
