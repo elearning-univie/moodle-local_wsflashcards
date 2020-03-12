@@ -364,7 +364,7 @@ class local_wsflashcards_external extends external_api {
                 new external_single_structure([
                         'c_name' => new external_value(PARAM_TEXT, 'Course name'),
                         'c_unique_id' => new external_value(PARAM_INT, 'Course ID'),
-                        'c_image' => new external_value(PARAM_BASE64, 'Course image'),
+                        'c_image' => new external_value(PARAM_TEXT, 'Course image'),
                         'activity_col' => new external_multiple_structure(
                                 new external_single_structure([
                                         'a_name' => new external_value(PARAM_TEXT, 'Activity name'),
