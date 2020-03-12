@@ -96,6 +96,8 @@ class local_wsflashcards_external extends external_api {
     public static function get_courses() {
         global $DB, $USER;
 
+        local_wsflashcards_check_for_orphan_or_hidden_questions();
+
         $sql = "SELECT c.fullname AS cname, c.id AS cid, f.name AS aname, count(*) AS qcount, f.id AS aid
                   FROM {flashcards} f
                   JOIN {flashcards_q_stud_rel} fs ON f.id = fs.flashcardsid
@@ -116,6 +118,12 @@ class local_wsflashcards_external extends external_api {
 
         foreach ($records as $record) {
             if ($courseid != $record->cid) {
+                $context = context_module::instance($record->cid, MUST_EXIST);
+
+                if (!has_capability('mod/flashcards:studentview', $context)) {
+                    continue;
+                }
+
                 if ($courseid != 0) {
                     $courseimageb64 = local_wsflashcards_encode_course_image($courseid);
                     $courses[] = array('c_name' => $cname, 'c_unique_id' => $cid, 'c_image' => $courseimageb64, 'activity_col' => $activities);
@@ -153,19 +161,21 @@ class local_wsflashcards_external extends external_api {
         global $DB, $USER, $CFG;
         require_once($CFG->libdir . '/questionlib.php');
         $params = self::validate_parameters(self::get_questions_parameters(), array('q_amount' => $qamount, 'a_unique_id' => $aid));
+        local_wsflashcards_check_for_orphan_or_hidden_questions();
 
         list($insql, $inids) = $DB->get_in_or_equal($params['a_unique_id']);
         $sql = "SELECT cm.instance
                   FROM {course_modules} cm
                   JOIN {modules} m ON cm.module = m.id AND m.name = 'flashcards'
-                 WHERE cm.visible = 1
+                  JOIN {course} c ON c.id = cm.course
+                 WHERE c.visible = 1
+                   AND cm.visible = 1
                    AND cm.instance $insql";
         $aid = $DB->get_fieldset_sql($sql, $inids);
 
         $returnvalues = array();
-        $countaid = count($aid);
         $values = array();
-        $countaidleft = $countaid;
+        $countaid = count($aid);
 
         if ($params['q_amount'] > 100 || $params['q_amount'] <= 0) {
             $qcount = 50;
@@ -200,7 +210,7 @@ class local_wsflashcards_external extends external_api {
                 $values[$record->fid] = $record->qcount;
                 $moddiff += $split - $record->qcount;
             } else {
-                $sharepool = intdiv($moddiff, $countaidleft);
+                $sharepool = intdiv($moddiff, $countaid);
 
                 if ($record->qcount <= ($split + $sharepool)) {
                     $values[$record->fid] = $record->qcount;
@@ -209,23 +219,21 @@ class local_wsflashcards_external extends external_api {
                     $moddiff -= $sharepool;
                 }
             }
-            $countaidleft--;
+            $countaid--;
         }
 
         foreach ($aid as $activityid) {
             $questioncountleft = $values[$activityid];
+            $questions = array();
+            $cname = null;
+            $aname = null;
 
-            $sql = "SELECT q.id AS qid, c.fullname AS cname, f.name AS aname
+            $sql = "SELECT fsr.questionid AS qid, c.fullname AS cname, f.name AS aname
                       FROM {flashcards_q_stud_rel} fsr
-                      JOIN {question} q ON fsr.questionid = q.id
                       JOIN {flashcards} f ON f.id = fsr.flashcardsid
                       JOIN {course} c ON f.course = c.id
                      WHERE fsr.studentid = :userid
                        AND fsr.flashcardsid = :aid";
-
-            $questions = array();
-            $cname = null;
-            $aname = null;
 
             $records = $DB->get_recordset_sql($sql, ['userid' => $USER->id, 'aid' => $activityid]);
             $cm = get_coursemodule_from_instance("flashcards", $activityid);
@@ -233,7 +241,7 @@ class local_wsflashcards_external extends external_api {
 
             try {
                 self::validate_context($context);
-                require_capability('moodle/course:update', $context);
+                require_capability('mod/flashcards:studentview', $context);
             } catch (Exception $e) {
                 $exceptionparam = new stdClass();
                 $exceptionparam->message = $e->getMessage();
@@ -310,8 +318,9 @@ class local_wsflashcards_external extends external_api {
      */
     public static function set_answers($activities) {
         global $DB, $USER;
+        $params = self::validate_parameters(self::set_answers_parameters(), array('activities' => $activities));
 
-        foreach ($activities as $activity) {
+        foreach ($params['activities'] as $activity) {
             $correctids = array();
             $wrongids = array();
             $aid = $activity['a_unique_id'];

@@ -80,3 +80,15 @@ function local_wsflashcards_encode_question_images($questiontext) {
 
     return $questiontext;
 }
+
+/**
+ * Deletes records from flashcards_q_stud_rel when the question got deleted
+ * @throws dml_exception
+ */
+function local_wsflashcards_check_for_orphan_or_hidden_questions() {
+    global $USER, $DB;
+
+    $sql = "questionid NOT IN (SELECT id FROM {question} WHERE hidden = 0) AND studentid = :userid";
+
+    $DB->delete_records_select('flashcards_q_stud_rel', $sql, array('userid' => $USER->id));
+}
