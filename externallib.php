@@ -98,7 +98,7 @@ class local_wsflashcards_external extends external_api {
 
         local_wsflashcards_check_for_orphan_or_hidden_questions();
 
-        $sql = "SELECT c.fullname AS cname, c.id AS cid, f.name AS aname, count(*) AS qcount, f.id AS aid
+        $sql = "SELECT c.fullname AS cname, c.id AS cid, f.name AS aname, count(*) AS qcount, f.id AS aid, cm.id AS cmid
                   FROM {flashcards} f
                   JOIN {flashcards_q_stud_rel} fs ON f.id = fs.flashcardsid
                   JOIN {course} c ON f.course = c.id
@@ -107,31 +107,29 @@ class local_wsflashcards_external extends external_api {
                  WHERE fs.studentid = :userid
                    AND c.visible = 1
                    AND cm.visible = 1
-              GROUP BY c.fullname, c.id, f.id, f.name";
+              GROUP BY c.fullname, c.id, f.id, f.name, cm.id";
 
         $records = $DB->get_recordset_sql($sql, ['userid' => $USER->id]);
         $courseid = 0;
         $courses = array();
         $activities = array();
         $cname = "";
-        $cid = "";
 
         foreach ($records as $record) {
+            $context = context_module::instance($record->cmid, MUST_EXIST);
+
+            if (!has_capability('mod/flashcards:studentview', $context)) {
+                continue;
+            }
+
             if ($courseid != $record->cid) {
-                $context = context_module::instance($record->cid, MUST_EXIST);
-
-                if (!has_capability('mod/flashcards:studentview', $context)) {
-                    continue;
-                }
-
                 if ($courseid != 0) {
                     $courseimageb64 = local_wsflashcards_encode_course_image($courseid);
-                    $courses[] = array('c_name' => $cname, 'c_unique_id' => $cid, 'c_image' => $courseimageb64, 'activity_col' => $activities);
+                    $courses[] = array('c_name' => $cname, 'c_unique_id' => $courseid, 'c_image' => $courseimageb64, 'activity_col' => $activities);
                     $activities = array();
                 }
 
                 $cname = $record->cname;
-                $cid = $record->cid;
                 $courseid = $record->cid;
             }
 
@@ -141,7 +139,7 @@ class local_wsflashcards_external extends external_api {
 
         if ($courseid != 0) {
             $courseimageb64 = local_wsflashcards_encode_course_image($courseid);
-            $courses[] = array('c_name' => $cname, 'c_unique_id' => $cid, 'c_image' => $courseimageb64, 'activity_col' => $activities);
+            $courses[] = array('c_name' => $cname, 'c_unique_id' => $courseid, 'c_image' => $courseimageb64, 'activity_col' => $activities);
         }
 
         return $courses;
@@ -176,6 +174,10 @@ class local_wsflashcards_external extends external_api {
         $returnvalues = array();
         $values = array();
         $countaid = count($aid);
+
+        if ($countaid == 0) {
+            return array();
+        }
 
         if ($params['q_amount'] > 100 || $params['q_amount'] <= 0) {
             $qcount = 50;
