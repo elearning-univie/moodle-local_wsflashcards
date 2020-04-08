@@ -65,12 +65,12 @@ function local_wsflashcards_encode_question_images($questiontext) {
                 $fs = get_file_storage();
 
                 // /$contextid/$component/$filearea/$filepath/filename
-                $fullpath = "/$urlpath[0]/$urlpath[1]/$urlpath[2]/$urlpath[5]/$urlpath[6]";
+                $fullpath = "/$urlpath[0]/$urlpath[1]/$urlpath[2]/$urlpath[5]/" . urldecode($urlpath[6]);
 
                 if (!$file = $fs->get_file_by_hash(sha1($fullpath)) or $file->is_directory()) {
                     send_file_not_found();
                 } else if ($file->is_valid_image()) {
-                    $encodedimage = '<img src="data:image/jpeg;charset=utf-8;base64,' .
+                    $encodedimage = '<img src="data:' . $file->get_mimetype() . ';charset=utf-8;base64,' .
                             base64_encode($file->get_content()) . '" />';
                     $questiontext = str_replace($image, $encodedimage, $questiontext);
                 }
