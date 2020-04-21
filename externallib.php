@@ -293,16 +293,16 @@ class local_wsflashcards_external extends external_api {
                 $div = $xpath->evaluate($query);
 
                 $question = '';
-                for ($i = 0; $i < $div->length; $i++) {
-                    $question .= $dom->saveHTML($div->item($i));
+                for ($j = 0; $j < $div->length; $j++) {
+                    $question .= $dom->saveHTML($div->item($j));
                 }
 
                 $query = './/div[contains(concat(" ", normalize-space(@class), " "), " qflashcard-answer ")]/child::*';
                 $div = $xpath->evaluate($query);
 
                 $questionanswer = '';
-                for ($i = 0; $i < $div->length; $i++) {
-                    $questionanswer .= $dom->saveHTML($div->item($i));
+                for ($j = 0; $j < $div->length; $j++) {
+                    $questionanswer .= $dom->saveHTML($div->item($j));
                 }
 
                 $questions[] = array(
