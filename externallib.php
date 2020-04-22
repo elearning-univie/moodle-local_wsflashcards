@@ -283,7 +283,7 @@ class local_wsflashcards_external extends external_api {
             $dom = new DOMDocument();
 
             for ($i = 1; $i <= $values[$activityid]; $i++) {
-                $questiontext = $quba->render_question($i, $options);
+                $questiontext = utf8_decode($quba->render_question($i, $options));
                 $questiontext = local_wsflashcards_encode_question_images($questiontext);
 
                 $dom->loadHtml($questiontext);
@@ -291,11 +291,19 @@ class local_wsflashcards_external extends external_api {
 
                 $query = './/div[contains(concat(" ", normalize-space(@class), " "), " qflashcard-question ")]/child::*';
                 $div = $xpath->evaluate($query);
-                $question = $dom->saveHTML($div->item(0));
+
+                $question = '';
+                for ($j = 0; $j < $div->length; $j++) {
+                    $question .= $dom->saveHTML($div->item($j));
+                }
 
                 $query = './/div[contains(concat(" ", normalize-space(@class), " "), " qflashcard-answer ")]/child::*';
                 $div = $xpath->evaluate($query);
-                $questionanswer = $dom->saveHTML($div->item(0));
+
+                $questionanswer = '';
+                for ($j = 0; $j < $div->length; $j++) {
+                    $questionanswer .= $dom->saveHTML($div->item($j));
+                }
 
                 $questions[] = array(
                         'q_unique_id' => $qids[$i - 1],
