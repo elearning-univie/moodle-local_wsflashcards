@@ -98,18 +98,24 @@ class local_wsflashcards_external extends external_api {
 
         local_wsflashcards_check_for_orphan_or_hidden_questions();
 
-        $sql = "SELECT c.fullname AS cname, c.id AS cid, f.name AS aname, count(*) AS qcount, f.id AS aid, cm.id AS cmid
-                  FROM {flashcards} f
-                  JOIN {flashcards_q_stud_rel} fs ON f.id = fs.flashcardsid
-                  JOIN {course} c ON f.course = c.id
-                  JOIN {course_modules} cm ON cm.instance = f.id
+        $roleid = $DB->get_field('role', 'id', ['shortname' => 'student'], MUST_EXIST);
+
+        $sql = "SELECT c.fullname AS cname, c.id AS cid, f.name AS aname, count(fs.id) AS qcount, f.id AS aid, cm.id AS cmid
+                  FROM {role_assignments} ra
+                  JOIN {context} ctx ON ra.contextid = ctx.id
+                  JOIN {course} c ON ctx.instanceid = c.id
+                  JOIN {flashcards} f ON c.id = f.course
+                  JOIN {course_modules} cm ON f.id = cm.instance
                   JOIN {modules} m ON m.id = cm.module AND m.name = 'flashcards'
-                 WHERE fs.studentid = :userid
+             LEFT JOIN {flashcards_q_stud_rel} fs ON f.id = fs.flashcardsid AND ra.userid = fs.studentid
+                 WHERE ra.userid = :userid
+                   AND ra.roleid = :roleid
+                   AND ctx.contextlevel = :context
                    AND c.visible = 1
                    AND cm.visible = 1
               GROUP BY c.fullname, c.id, f.id, f.name, cm.id";
 
-        $records = $DB->get_recordset_sql($sql, ['userid' => $USER->id]);
+        $records = $DB->get_recordset_sql($sql, ['userid' => $USER->id, 'context' => CONTEXT_COURSE, 'roleid' => $roleid]);
         $courseid = 0;
         $courses = array();
         $activities = array();
@@ -133,7 +139,7 @@ class local_wsflashcards_external extends external_api {
                 $courseid = $record->cid;
             }
 
-            $activity = array('a_name' => $record->aname, 'a_quest_count' => $record->qcount, 'a_unique_id' => $record->aid);
+            $activity = array('a_name' => $record->aname, 'a_quest_count' => $record->qcount, 'a_unique_id' => $record->aid, 'cm_id' => $record->cmid);
             $activities[] = $activity;
         }
 
@@ -379,7 +385,8 @@ class local_wsflashcards_external extends external_api {
                                 new external_single_structure([
                                         'a_name' => new external_value(PARAM_TEXT, 'Activity name'),
                                         'a_quest_count' => new external_value(PARAM_INT, 'Activity question count'),
-                                        'a_unique_id' => new external_value(PARAM_INT, 'Activity ID')
+                                        'a_unique_id' => new external_value(PARAM_INT, 'Activity ID'),
+                                        'cm_id' => new external_value(PARAM_INT, 'Context module ID of the activity')
                                 ])
                         )
                 ])
