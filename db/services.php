@@ -27,7 +27,7 @@ require_once($CFG->dirroot . "/local/wsflashcards/constants.php");
 $services = array(
         'wsflashcards' => array(
                 'functions' => array(),
-                'shortname' => LOCAL_WSFLASHCARDS_SERVICE_SHORTNAME,
+                'shortname' => 'wsflashcards',
                 'requiredcapability' => 'mod/flashcards:webservice',
                 'restrictedusers' => 0,
                 'enabled' => 1,
