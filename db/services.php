@@ -22,44 +22,47 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 defined('MOODLE_INTERNAL') || die();
-require_once($CFG->dirroot . "/local/wsflashcards/constants.php");
-
-$services = array(
-        'wsflashcards' => array(
-                'functions' => array(),
-                'shortname' => 'wsflashcards',
-                'requiredcapability' => 'mod/flashcards:webservice',
-                'restrictedusers' => 0,
-                'enabled' => 1,
-        )
-);
 
 $functions = array(
-        'wsflashcards_get_courses' => array(
-                'classname'   => 'local_wsflashcards_external',
-                'methodname'  => 'get_courses',
-                'classpath'   => 'local/wsflashcards/externallib.php',
-                'description' => 'get_courses',
-                'type'        => 'read',
-                'loginrequired' => true,
-                'services' => array('wsflashcards')
+    'wsflashcards_get_courses' => array(
+        'classname' => 'local_wsflashcards_external',
+        'methodname' => 'get_courses',
+        'classpath' => 'local/wsflashcards/externallib.php',
+        'description' => 'Returns all courses for the current user, which have flashcards with active questions available.',
+        'type' => 'read',
+        'loginrequired' => true,
+        'services' => array('wsflashcards')
+    ),
+    'wsflashcards_get_questions' => array(
+        'classname' => 'local_wsflashcards_external',
+        'methodname' => 'get_questions',
+        'classpath' => 'local/wsflashcards/externallib.php',
+        'description' => 'Returns an equal amount of questions from each activity given.',
+        'type' => 'read',
+        'loginrequired' => true,
+        'services' => array('wsflashcards')
+    ),
+    'wsflashcards_set_answers' => array(
+        'classname' => 'local_wsflashcards_external',
+        'methodname' => 'set_answers',
+        'classpath' => 'local/wsflashcards/externallib.php',
+        'description' => 'Moves questions into their next box.',
+        'type' => 'write',
+        'loginrequired' => true,
+        'services' => array('wsflashcards')
+    )
+);
+
+$services = array(
+    'wsflashcards' => array(
+        'functions' => array(
+            'wsflashcards_get_courses',
+            'wsflashcards_get_questions',
+            'wsflashcards_set_answers'
         ),
-        'wsflashcards_get_questions' => array(
-                'classname'   => 'local_wsflashcards_external',
-                'methodname'  => 'get_questions',
-                'classpath'   => 'local/wsflashcards/externallib.php',
-                'description' => 'get_questions',
-                'type'        => 'read',
-                'loginrequired' => true,
-                'services' => array('wsflashcards')
-        ),
-        'wsflashcards_set_answers' => array(
-                'classname'   => 'local_wsflashcards_external',
-                'methodname'  => 'set_answers',
-                'classpath'   => 'local/wsflashcards/externallib.php',
-                'description' => 'set_answers',
-                'type'        => 'write',
-                'loginrequired' => true,
-                'services' => array('wsflashcards')
-        )
+        'shortname' => 'wsflashcards',
+        'requiredcapability' => 'mod/flashcards:webservice',
+        'restrictedusers' => 0,
+        'enabled' => 1,
+    )
 );

@@ -325,7 +325,7 @@ class local_wsflashcards_external extends external_api {
     }
 
     /**
-     * Moves all questions from box 0 to box 1 for the activity
+     * Moves questions into their next box.
      *
      * @param int $activities
      * @return int
