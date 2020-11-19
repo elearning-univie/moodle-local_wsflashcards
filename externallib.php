@@ -33,16 +33,14 @@ require_once(__DIR__ . '/locallib.php');
  * @copyright  2020 University of Vienna
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class local_wsflashcards_external extends external_api
-{
+class local_wsflashcards_external extends external_api {
 
     /**
      * Returns description of method parameters
      *
      * @return external_function_parameters
      */
-    public static function get_courses_parameters()
-    {
+    public static function get_courses_parameters() {
         return new external_function_parameters(
             array()
         );
@@ -53,8 +51,7 @@ class local_wsflashcards_external extends external_api
      *
      * @return external_function_parameters
      */
-    public static function get_questions_parameters()
-    {
+    public static function get_questions_parameters() {
         return new external_function_parameters(
             array(
                 'q_amount' => new external_value(PARAM_INT, 'Amount of questions', VALUE_DEFAULT, 0),
@@ -70,8 +67,7 @@ class local_wsflashcards_external extends external_api
      *
      * @return external_function_parameters
      */
-    public static function set_answers_parameters()
-    {
+    public static function set_answers_parameters() {
         return new external_function_parameters(
             array(
                 'activities' => new external_multiple_structure(
@@ -97,8 +93,7 @@ class local_wsflashcards_external extends external_api
      * @return int
      * @throws dml_exception
      */
-    public static function get_courses()
-    {
+    public static function get_courses() {
         global $DB, $USER;
 
         local_wsflashcards_check_for_orphan_or_hidden_questions();
@@ -166,8 +161,7 @@ class local_wsflashcards_external extends external_api
      * @throws coding_exception
      * @throws dml_exception
      */
-    public static function get_questions($qamount, $aid)
-    {
+    public static function get_questions($qamount, $aid) {
         global $DB, $USER, $CFG;
         require_once($CFG->libdir . '/questionlib.php');
         $params = self::validate_parameters(self::get_questions_parameters(), array('q_amount' => $qamount, 'a_unique_id' => $aid));
@@ -338,8 +332,7 @@ class local_wsflashcards_external extends external_api
      * @throws coding_exception
      * @throws dml_exception
      */
-    public static function set_answers($activities)
-    {
+    public static function set_answers($activities) {
         global $DB, $USER;
         $params = self::validate_parameters(self::set_answers_parameters(), array('activities' => $activities));
 
@@ -382,8 +375,7 @@ class local_wsflashcards_external extends external_api
      *
      * @return external_value
      */
-    public static function get_courses_returns()
-    {
+    public static function get_courses_returns() {
         return new external_multiple_structure(
             new external_single_structure([
                 'c_name' => new external_value(PARAM_TEXT, 'Course name'),
@@ -406,8 +398,7 @@ class local_wsflashcards_external extends external_api
      *
      * @return external_value
      */
-    public static function get_questions_returns()
-    {
+    public static function get_questions_returns() {
         return new external_multiple_structure(
             new external_single_structure([
                 'c_name' => new external_value(PARAM_TEXT, 'Course name'),
@@ -429,8 +420,7 @@ class local_wsflashcards_external extends external_api
      *
      * @return external_value
      */
-    public static function set_answers_returns()
-    {
+    public static function set_answers_returns() {
         return null;
     }
 }
