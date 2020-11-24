@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->libdir . '/externallib.php');
-require_once($CFG->dirroot . '/local/wsflashcards/locallib.php');
+require_once(__DIR__ . '/locallib.php');
 
 /**
  * Class local_wsflashcards_external
@@ -42,7 +42,7 @@ class local_wsflashcards_external extends external_api {
      */
     public static function get_courses_parameters() {
         return new external_function_parameters(
-                array()
+            array()
         );
     }
 
@@ -53,12 +53,12 @@ class local_wsflashcards_external extends external_api {
      */
     public static function get_questions_parameters() {
         return new external_function_parameters(
-                array(
-                        'q_amount' => new external_value(PARAM_INT, 'Amount of questions', VALUE_DEFAULT, 0),
-                        'a_unique_id' => new external_multiple_structure(
-                                new external_value(PARAM_INT, 'Activity ID'), 'Array of Activity IDs which should be loaded.'
-                        )
+            array(
+                'q_amount' => new external_value(PARAM_INT, 'Amount of questions', VALUE_DEFAULT, 0),
+                'a_unique_id' => new external_multiple_structure(
+                    new external_value(PARAM_INT, 'Activity ID'), 'Array of Activity IDs which should be loaded.'
                 )
+            )
         );
     }
 
@@ -69,21 +69,21 @@ class local_wsflashcards_external extends external_api {
      */
     public static function set_answers_parameters() {
         return new external_function_parameters(
-                array(
-                        'activities' => new external_multiple_structure(
-                                new external_single_structure([
-                                        'a_unique_id' => new external_value(PARAM_INT, 'Activity ID'),
-                                        'questions' => new external_multiple_structure(
-                                                new external_single_structure([
-                                                        'q_unique_id' => new external_value(PARAM_INT, 'Question ID'),
-                                                        'q_known' => new external_value(PARAM_INT,
-                                                                'Boolean value for the answer. 1 if correct, 0 if wrong'),
-                                                        'q_answer_date' => new external_value(PARAM_TEXT, 'Answer date')
-                                                ])
-                                        )
-                                ])
+            array(
+                'activities' => new external_multiple_structure(
+                    new external_single_structure([
+                        'a_unique_id' => new external_value(PARAM_INT, 'Activity ID'),
+                        'questions' => new external_multiple_structure(
+                            new external_single_structure([
+                                'q_unique_id' => new external_value(PARAM_INT, 'Question ID'),
+                                'q_known' => new external_value(PARAM_INT,
+                                    'Boolean value for the answer. 1 if correct, 0 if wrong'),
+                                'q_answer_date' => new external_value(PARAM_TEXT, 'Answer date')
+                            ])
                         )
+                    ])
                 )
+            )
         );
     }
 
@@ -312,20 +312,20 @@ class local_wsflashcards_external extends external_api {
                 }
 
                 $questions[] = array(
-                        'q_unique_id' => $qids[$i - 1],
-                        'q_front_data' => $question,
-                        'q_back_data' => $questionanswer);
+                    'q_unique_id' => $qids[$i - 1],
+                    'q_front_data' => $question,
+                    'q_back_data' => $questionanswer);
             }
 
             $returnvalues[] =
-                    array('c_name' => $cname, 'a_name' => $aname, 'a_unique_id' => $activityid, 'questions' => $questions);
+                array('c_name' => $cname, 'a_name' => $aname, 'a_unique_id' => $activityid, 'questions' => $questions);
         }
 
         return $returnvalues;
     }
 
     /**
-     * Moves all questions from box 0 to box 1 for the activity
+     * Moves questions into their next box.
      *
      * @param int $activities
      * @return int
@@ -377,19 +377,19 @@ class local_wsflashcards_external extends external_api {
      */
     public static function get_courses_returns() {
         return new external_multiple_structure(
-                new external_single_structure([
-                        'c_name' => new external_value(PARAM_TEXT, 'Course name'),
-                        'c_unique_id' => new external_value(PARAM_INT, 'Course ID'),
-                        'c_image' => new external_value(PARAM_TEXT, 'Course image'),
-                        'activity_col' => new external_multiple_structure(
-                                new external_single_structure([
-                                        'a_name' => new external_value(PARAM_TEXT, 'Activity name'),
-                                        'a_quest_count' => new external_value(PARAM_INT, 'Activity question count'),
-                                        'a_unique_id' => new external_value(PARAM_INT, 'Activity ID'),
-                                        'cm_id' => new external_value(PARAM_INT, 'Context module ID of the activity')
-                                ])
-                        )
-                ])
+            new external_single_structure([
+                'c_name' => new external_value(PARAM_TEXT, 'Course name'),
+                'c_unique_id' => new external_value(PARAM_INT, 'Course ID'),
+                'c_image' => new external_value(PARAM_TEXT, 'Course image'),
+                'activity_col' => new external_multiple_structure(
+                    new external_single_structure([
+                        'a_name' => new external_value(PARAM_TEXT, 'Activity name'),
+                        'a_quest_count' => new external_value(PARAM_INT, 'Activity question count'),
+                        'a_unique_id' => new external_value(PARAM_INT, 'Activity ID'),
+                        'cm_id' => new external_value(PARAM_INT, 'Context module ID of the activity')
+                    ])
+                )
+            ])
         );
     }
 
@@ -400,18 +400,18 @@ class local_wsflashcards_external extends external_api {
      */
     public static function get_questions_returns() {
         return new external_multiple_structure(
-                new external_single_structure([
-                        'c_name' => new external_value(PARAM_TEXT, 'Course name'),
-                        'a_unique_id' => new external_value(PARAM_INT, 'Activity ID'),
-                        'a_name' => new external_value(PARAM_TEXT, 'Activity name'),
-                        'questions' => new external_multiple_structure(
-                                new external_single_structure([
-                                        'q_unique_id' => new external_value(PARAM_INT, 'Question ID'),
-                                        'q_front_data' => new external_value(PARAM_RAW, 'Question text'),
-                                        'q_back_data' => new external_value(PARAM_RAW, 'Question answer')
-                                ])
-                        )
-                ])
+            new external_single_structure([
+                'c_name' => new external_value(PARAM_TEXT, 'Course name'),
+                'a_unique_id' => new external_value(PARAM_INT, 'Activity ID'),
+                'a_name' => new external_value(PARAM_TEXT, 'Activity name'),
+                'questions' => new external_multiple_structure(
+                    new external_single_structure([
+                        'q_unique_id' => new external_value(PARAM_INT, 'Question ID'),
+                        'q_front_data' => new external_value(PARAM_RAW, 'Question text'),
+                        'q_back_data' => new external_value(PARAM_RAW, 'Question answer')
+                    ])
+                )
+            ])
         );
     }
 
