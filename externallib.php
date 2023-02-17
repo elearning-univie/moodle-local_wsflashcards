@@ -98,24 +98,18 @@ class local_wsflashcards_external extends external_api {
 
         local_wsflashcards_check_for_orphan_or_hidden_questions();
 
-        $roleid = $DB->get_field('role', 'id', ['shortname' => 'student'], MUST_EXIST);
-
         $sql = "SELECT c.fullname AS cname, c.id AS cid, f.name AS aname, count(fs.id) AS qcount, f.id AS aid, cm.id AS cmid
-                  FROM {role_assignments} ra
-                  JOIN {context} ctx ON ra.contextid = ctx.id
-                  JOIN {course} c ON ctx.instanceid = c.id
+                  FROM {course} c
                   JOIN {flashcards} f ON c.id = f.course
                   JOIN {course_modules} cm ON f.id = cm.instance
                   JOIN {modules} m ON m.id = cm.module AND m.name = 'flashcards'
-             LEFT JOIN {flashcards_q_stud_rel} fs ON f.id = fs.flashcardsid AND ra.userid = fs.studentid
-                 WHERE ra.userid = :userid
-                   AND ra.roleid = :roleid
-                   AND ctx.contextlevel = :context
+             LEFT JOIN {flashcards_q_stud_rel} fs ON f.id = fs.flashcardsid AND fs.studentid = ?
+                 WHERE c.id IN (SELECT DISTINCT e.courseid FROM {user_enrolments} ue JOIN {enrol} e ON ue.enrolid = e.id WHERE ue.userid = ?)
                    AND c.visible = 1
                    AND cm.visible = 1
               GROUP BY c.fullname, c.id, f.id, f.name, cm.id";
 
-        $records = $DB->get_recordset_sql($sql, ['userid' => $USER->id, 'context' => CONTEXT_COURSE, 'roleid' => $roleid]);
+        $records = $DB->get_recordset_sql($sql, [$USER->id, $USER->id]);
         $courseid = 0;
         $courses = array();
         $activities = array();
@@ -124,7 +118,7 @@ class local_wsflashcards_external extends external_api {
         foreach ($records as $record) {
             $context = context_module::instance($record->cmid, MUST_EXIST);
 
-            if (!has_capability('mod/flashcards:studentview', $context)) {
+            if (!has_capability('mod/flashcards:view', $context)) {
                 continue;
             }
 
