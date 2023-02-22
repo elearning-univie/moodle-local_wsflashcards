@@ -243,7 +243,7 @@ class local_wsflashcards_external extends external_api {
 
             try {
                 self::validate_context($context);
-                require_capability('mod/flashcards:studentview', $context);
+                require_capability('mod/flashcards:view', $context);
             } catch (Exception $e) {
                 $exceptionparam = new stdClass();
                 $exceptionparam->message = $e->getMessage();
