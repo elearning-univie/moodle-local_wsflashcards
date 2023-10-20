@@ -28,7 +28,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_wsflashcards';
+$plugin->requires = 2022041900;
 $plugin->version = 2023102000;
-$plugin->requires = 2020061501;
 $plugin->maturity = MATURITY_STABLE;
-$plugin->dependencies = array('mod_flashcards' => 2020021800);
+$plugin->dependencies = array('mod_flashcards' => 2022090100);

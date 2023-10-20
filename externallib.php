@@ -96,7 +96,7 @@ class local_wsflashcards_external extends external_api {
     public static function get_courses() {
         global $DB, $USER;
 
-        local_wsflashcards_check_for_orphan_or_hidden_questions();
+        local_wsflashcards_check_for_orphan_questions();
 
         $sql = "SELECT c.fullname AS cname, c.id AS cid, f.name AS aname, count(fs.id) AS qcount, f.id AS aid, cm.id AS cmid
                   FROM {course} c
@@ -159,7 +159,7 @@ class local_wsflashcards_external extends external_api {
         global $DB, $USER, $CFG;
         require_once($CFG->libdir . '/questionlib.php');
         $params = self::validate_parameters(self::get_questions_parameters(), array('q_amount' => $qamount, 'a_unique_id' => $aid));
-        local_wsflashcards_check_for_orphan_or_hidden_questions();
+        local_wsflashcards_check_for_orphan_questions();
 
         list($insql, $inids) = $DB->get_in_or_equal($params['a_unique_id']);
         $sql = "SELECT cm.instance
@@ -230,8 +230,10 @@ class local_wsflashcards_external extends external_api {
             $cname = null;
             $aname = null;
 
-            $sql = "SELECT fsr.questionid AS qid, c.fullname AS cname, f.name AS aname
+            $sql = "SELECT fsr.fqid AS fqid, c.fullname AS cname, f.name AS aname,
+                    (SELECT max(qv.questionid) from {question_versions} qv where qv.questionbankentryid = fqs.qbankentryid) AS qid
                       FROM {flashcards_q_stud_rel} fsr
+                      JOIN {flashcards_q_status} fqs ON fqs.id = fsr.fqid
                       JOIN {flashcards} f ON f.id = fsr.flashcardsid
                       JOIN {course} c ON f.course = c.id
                      WHERE fsr.studentid = :userid
@@ -259,11 +261,10 @@ class local_wsflashcards_external extends external_api {
             $options->generalfeedback = question_display_options::HIDDEN;
 
             foreach ($records as $record) {
-
                 $question = question_bank::load_question($record->qid);
                 $quba->add_question($question, 1);
 
-                $qids[] = $record->qid;
+                $qids[] = $record->fqid;
 
                 if (is_null($cname)) {
                     $cname = $record->cname;
@@ -348,7 +349,7 @@ class local_wsflashcards_external extends external_api {
                 $sql = "UPDATE {flashcards_q_stud_rel}
                            SET tries = tries+1,
                                currentbox = case when currentbox < 5 then currentbox+1 else 5 end
-                         WHERE studentid = :userid AND flashcardsid = :aid AND questionid $inids";
+                         WHERE studentid = :userid AND flashcardsid = :aid AND fqid $inids";
                 $DB->execute($sql, ['userid' => $USER->id, 'aid' => $aid] + $cqids);
             }
 
@@ -358,7 +359,7 @@ class local_wsflashcards_external extends external_api {
                            SET tries = tries+1,
                                currentbox = 1,
                                wronganswercount = wronganswercount+1
-                         WHERE studentid = :userid AND flashcardsid = :aid AND questionid $inids";
+                         WHERE studentid = :userid AND flashcardsid = :aid AND fqid $inids";
                 $DB->execute($sql, ['userid' => $USER->id, 'aid' => $aid] + $wqids);
             }
         }
