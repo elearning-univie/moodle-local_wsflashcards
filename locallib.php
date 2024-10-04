@@ -88,7 +88,7 @@ function local_wsflashcards_encode_question_images($questiontext) {
 function local_wsflashcards_check_for_orphan_questions() {
     global $USER, $DB;
 
-    $sql = "not exists (select 1 from {flashcards_q_status} fqs where fqs.id = fqid) AND studentid = :userid";
+    $sql = "not exists (select 1 from {flashcards_question} fqs where fqs.id = fqid) AND studentid = :userid";
 
     $DB->delete_records_select('flashcards_q_stud_rel', $sql, ['userid' => $USER->id]);
 }
