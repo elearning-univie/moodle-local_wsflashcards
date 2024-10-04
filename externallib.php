@@ -233,7 +233,7 @@ class local_wsflashcards_external extends external_api {
             $sql = "SELECT fsr.fqid AS fqid, c.fullname AS cname, f.name AS aname,
                     (SELECT max(qv.questionid) from {question_versions} qv where qv.questionbankentryid = fqs.qbankentryid) AS qid
                       FROM {flashcards_q_stud_rel} fsr
-                      JOIN {flashcards_q_status} fqs ON fqs.id = fsr.fqid
+                      JOIN {flashcards_question} fqs ON fqs.id = fsr.fqid
                       JOIN {flashcards} f ON f.id = fsr.flashcardsid
                       JOIN {course} c ON f.course = c.id
                      WHERE fsr.studentid = :userid
